@@ -1,64 +1,46 @@
+REPORT - Feature 3 (Static Library)
 
-# REPORT.md - Task 5 Draft Answers
+Q1: Compare the Makefile from Part 2 and Part 3. What are the key differences in the variables and rules that enable the creation of a static library?
 
-## 1. Explain the linking rule in the Makefile
-The linking rule:
-```
-$(TARGET): $(OBJECTS)
-    $(CC) $(CFLAGS) -o $(TARGET) $(OBJECTS)
-```
-**Explanation:**
-- This rule tells `make` how to **link all object files (`.o`)** together to produce the final executable (`bin/client`).
-- `$(OBJECTS)` represents compiled `.o` files, such as `main.o`, `mystrfunctions.o`, and `myfilefunctions.o`.
-- The compiler (`gcc`) combines these into a single runnable program.
+- Part 2 Makefile (Multi-file build):
+  * Compiled each .c file into .o and then directly linked all objects into the final binary (bin/client).
+  * Only one linking step.
+  * No library was created, objects were always rebuilt together.
 
-**Difference from linking against a library:**
-- In this rule, we directly link all `.o` files into the executable.
-- When linking against a **library**, you don’t pass individual `.o` files — you pass a library file, such as:
-  ```
-  gcc -o client main.o -Llib -lmyutils
-  ```
-  where:
-  - `-L` specifies the library folder,
-  - `-l` links the pre-built library (e.g., `libmyutils.a` or `libmyutils.so`).
-- This makes the build process modular and efficient.
+- Part 3 Makefile (Static library build):
+  * Introduced new variables:
+    - LIBDIR → directory for libraries.
+    - LIBNAME → name of the static library (libmyutils.a).
+  * Added a rule to build the static library using object files:
+      $(LIBDIR)/$(LIBNAME): $(OBJDIR)/myfilefunctions.o $(OBJDIR)/mystrfunctions.o
+          ar rcs $@ $^
+  * Final binary (bin/client) is linked against the static library with -L$(LIBDIR) -lmyutils instead of directly using object files.
 
----
+Key difference: Part 2 links objects directly, while Part 3 first archives them into a reusable library (.a) and then links against that library.
 
-## 2. What is a git tag and why is it useful?
-A **git tag** is a pointer to a specific commit, used to **mark important points** in a project’s history, like stable versions or milestones.
 
-**Types of tags:**
-- **Lightweight Tag:**  
-  Just a simple pointer with no extra metadata. Example:  
-  ```
-  git tag v1.0
-  ```
-- **Annotated Tag (recommended):**  
-  Stores additional information like message, author, and date.  
-  Example:  
-  ```
-  git tag -a v1.0 -m "Stable release version 1.0"
-  ```
+Q2: What is the purpose of the ar command? Why is ranlib often used immediately after it?
 
-**Why useful:**
-- Provides a clear record of stable releases (e.g., `v0.1.1-multifile`).
-- Helps others know which version to use.
-- Essential for **GitHub Releases** and automated deployment pipelines.
+- ar (archiver):
+  * Combines multiple .o files into a single archive file (static library .a).
+  * Example: ar rcs libmyutils.a myfilefunctions.o mystrfunctions.o
 
----
+- ranlib:
+  * Generates an index (symbol table) for the .a file.
+  * Helps the linker (ld) quickly find which object file contains which symbol.
+  * On many modern systems, ar rcs already updates the index, so ranlib is sometimes optional — but traditionally it is run immediately after ar.
 
-## 3. Purpose of creating a GitHub Release and attaching binaries
-- A **GitHub Release** represents an officially packaged version of your project.
-- It combines:
-  - A tagged commit,
-  - A release title and description,
-  - Optionally, pre-compiled **binaries** for users to download.
+Summary: ar creates the library, ranlib makes it efficient to use during linking.
 
-**Why attach binaries like `bin/client`:**
-- Saves users from compiling source code themselves.
-- Allows non-technical users to directly run the program.
-- Good practice for distributing software.
 
-**Example:**
-- In this project, attaching `bin/client` means anyone can simply download and run the executable to test the string and file functions.
+Q3: When you run nm on your client_static executable, are the symbols for functions like mystrlen present? What does this tell you about how static linking works?
+
+- If you run: nm bin/client | grep mystrlen
+  you will see the symbol for mystrlen inside the executable itself.
+
+- This means:
+  * During static linking, the actual machine code of required functions from libmyutils.a is copied into the final executable.
+  * The binary is self-contained and does not need the library file at runtime.
+  * This is different from dynamic linking, where functions remain in a shared .so file and are resolved at runtime.
+
+Answer: Yes, mystrlen (and other functions) are present in the executable. This proves that static linking copies the library code into the final binary, making it larger but independent of external libraries at runtime.
