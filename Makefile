@@ -1,55 +1,61 @@
-# Top-level Makefile
+# ===========================
+# Makefile - Feature 3: Static Library Build
+# ===========================
 
-# --- Macros (configurable)
+# ---- Macros ----
 CC      := gcc
-INCDIR  := include
-SRCDIR  := src
+CFLAGS  := -Wall -Iinclude
 OBJDIR  := obj
-BINDIR  :=../bin
+BINDIR  := bin
 LIBDIR  := lib
-TARGET  := client
+SRCDIR  := src
+TARGET  := client_static
+LIBNAME := libmyutils.a
 
-CFLAGS  := -Wall -I$(INCDIR)
-LDFLAGS :=
+# ---- Phony Targets ----
+.PHONY: all clean run analyze
 
-# --- Phony targets
-.PHONY: all debug release pre_dirs clean install help
+# ---- Default Target ----
+all: $(BINDIR)/$(TARGET)
 
-# Default: build everything (delegates to src/ Makefile)
-all: pre_dirs
-	@echo "==> Building all (recursive: $(SRCDIR))"
-	$(MAKE) -C $(SRCDIR) CC="$(CC)" CFLAGS="$(CFLAGS)" OBJDIR="$(OBJDIR)" BINDIR="$(BINDIR)" TARGET="$(TARGET)" LDFLAGS="$(LDFLAGS)"
+# Step 1: Build object files for string and file functions
+$(OBJDIR)/%.o: $(SRCDIR)/%.c
+	@mkdir -p $(OBJDIR)
+	@echo "Compiling $< -> $@"
+	$(CC) $(CFLAGS) -c $< -o $@
 
-# Debug build: add debug flags then build
-debug: CFLAGS += -g -DDEBUG
-debug: clean all
+# Collect all C files except main.c
+UTIL_SRCS := $(filter-out $(SRCDIR)/main.c, $(wildcard $(SRCDIR)/*.c))
+UTIL_OBJS := $(patsubst $(SRCDIR)/%.c, $(OBJDIR)/%.o, $(UTIL_SRCS))
 
-# Release build: optimization flags then build
-release: CFLAGS += -O2 -DNDEBUG
-release: clean all
+# Step 2: Create the static library from utility object files
+$(LIBDIR)/$(LIBNAME): $(UTIL_OBJS)
+	@mkdir -p $(LIBDIR)
+	@echo "Archiving into static library -> $@"
+	ar rcs $@ $(UTIL_OBJS)
 
-# Ensure necessary directories exist before building
-pre_dirs:
-	@mkdir -p $(OBJDIR) $(BINDIR) $(LIBDIR)
+# Step 3: Link main.c with the static library to create the final executable
+$(BINDIR)/$(TARGET): $(LIBDIR)/$(LIBNAME) $(OBJDIR)/main.o
+	@mkdir -p $(BINDIR)
+	@echo "Linking main.o with static library -> $@"
+	$(CC) $(CFLAGS) $(OBJDIR)/main.o -L$(LIBDIR) -lmyutils -o $@
 
-# Clean (delegates to src/)
+# ---- Run the program ----
+run: all
+	./$(BINDIR)/$(TARGET)
+
+# ---- Analyze the static library ----
+analyze:
+	@echo "--- ar -t ---"
+	ar -t $(LIBDIR)/$(LIBNAME)
+	@echo "--- nm ---"
+	nm $(LIBDIR)/$(LIBNAME)
+	@echo "--- readelf -s ---"
+	readelf -s $(LIBDIR)/$(LIBNAME)
+
+# ---- Clean up build artifacts ----
 clean:
-	@echo "==> Cleaning (recursive: $(SRCDIR))"
-	$(MAKE) -C $(SRCDIR) clean OBJDIR="$(OBJDIR)" BINDIR="$(BINDIR)"
-	@rm -f $(BINDIR)/$(TARGET)
-
-# Install (simple, copies binary to /usr/local/bin)
-install: all
-	@echo "==> Installing $(TARGET) to /usr/local/bin (may need sudo)"
-	install -d /usr/local/bin
-	install -m 0755 bin/$(TARGET) /usr/local/bin/$(TARGET)
+	@echo "Cleaning up..."
+	rm -f $(OBJDIR)/*.o $(BINDIR)/$(TARGET) $(LIBDIR)/$(LIBNAME)
 
 
-# Help: list available targets
-help:
-	@echo "Available targets:"
-	@echo "  make           # build default (all)"
-	@echo "  make debug     # build with debug flags"
-	@echo "  make release   # build optimized release"
-	@echo "  make clean     # remove build artifacts"
-	@echo "  make install   # install binary to /usr/local/bin"
