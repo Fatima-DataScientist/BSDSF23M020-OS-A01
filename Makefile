@@ -1,61 +1,62 @@
-# ===========================
-# Makefile - Feature 3: Static Library Build
-# ===========================
+# Root Makefile to manage recursive builds
 
-# ---- Macros ----
-CC      := gcc
-CFLAGS  := -Wall -Iinclude
-OBJDIR  := obj
-BINDIR  := bin
-LIBDIR  := lib
-SRCDIR  := src
-TARGET  := client_static
-LIBNAME := libmyutils.a
+CC = gcc
+CFLAGS = -Wall -Iinclude
+OBJDIR = obj
+BINDIR = bin
+LIBDIR = lib
 
-# ---- Phony Targets ----
-.PHONY: all clean run analyze
+.PHONY: all direct static dynamic clean install uninstall
 
-# ---- Default Target ----
-all: $(BINDIR)/$(TARGET)
+# Default target
+all: direct static dynamic
 
-# Step 1: Build object files for string and file functions
-$(OBJDIR)/%.o: $(SRCDIR)/%.c
-	@mkdir -p $(OBJDIR)
-	@echo "Compiling $< -> $@"
-	$(CC) $(CFLAGS) -c $< -o $@
+# Direct build (Feature 2)
+direct:
+	@echo "==> Building direct (recursive: src)"
+	$(MAKE) -C src CC="$(CC)" CFLAGS="$(CFLAGS)" OBJDIR="../$(OBJDIR)" BINDIR="../$(BINDIR)" LIBDIR="../$(LIBDIR)" direct
 
-# Collect all C files except main.c
-UTIL_SRCS := $(filter-out $(SRCDIR)/main.c, $(wildcard $(SRCDIR)/*.c))
-UTIL_OBJS := $(patsubst $(SRCDIR)/%.c, $(OBJDIR)/%.o, $(UTIL_SRCS))
+# Static build (Feature 3)
+static:
+	@echo "==> Building static (recursive: src)"
+	$(MAKE) -C src CC="$(CC)" CFLAGS="$(CFLAGS)" OBJDIR="../$(OBJDIR)" BINDIR="../$(BINDIR)" LIBDIR="../$(LIBDIR)" static
 
-# Step 2: Create the static library from utility object files
-$(LIBDIR)/$(LIBNAME): $(UTIL_OBJS)
-	@mkdir -p $(LIBDIR)
-	@echo "Archiving into static library -> $@"
-	ar rcs $@ $(UTIL_OBJS)
+# Dynamic build (Feature 4)
+dynamic:
+	@echo "==> Building dynamic (recursive: src)"
+	$(MAKE) -C src CC="$(CC)" CFLAGS="$(CFLAGS)" OBJDIR="../$(OBJDIR)" BINDIR="../$(BINDIR)" LIBDIR="../$(LIBDIR)" dynamic
 
-# Step 3: Link main.c with the static library to create the final executable
-$(BINDIR)/$(TARGET): $(LIBDIR)/$(LIBNAME) $(OBJDIR)/main.o
-	@mkdir -p $(BINDIR)
-	@echo "Linking main.o with static library -> $@"
-	$(CC) $(CFLAGS) $(OBJDIR)/main.o -L$(LIBDIR) -lmyutils -o $@
+# Install / Uninstall (Feature 5)
+PREFIX ?= /usr/local
+BINDIR_INSTALL = $(PREFIX)/bin
+LIBDIR_INSTALL = $(PREFIX)/lib
+MANDIR_INSTALL = $(PREFIX)/share/man/man3
 
-# ---- Run the program ----
-run: all
-	./$(BINDIR)/$(TARGET)
+install: dynamic
+	@echo "Installing program, library, and man pages into $(PREFIX)..."
+	mkdir -p $(BINDIR_INSTALL)
+	mkdir -p $(LIBDIR_INSTALL)
+	mkdir -p $(MANDIR_INSTALL)
+	cp bin/client_dynamic $(BINDIR_INSTALL)/client
+	cp lib/libmyutils.so $(LIBDIR_INSTALL)/
+	cp man/man3/* $(MANDIR_INSTALL)/
+	@echo "Installation complete."
 
-# ---- Analyze the static library ----
-analyze:
-	@echo "--- ar -t ---"
-	ar -t $(LIBDIR)/$(LIBNAME)
-	@echo "--- nm ---"
-	nm $(LIBDIR)/$(LIBNAME)
-	@echo "--- readelf -s ---"
-	readelf -s $(LIBDIR)/$(LIBNAME)
+uninstall:
+	@echo "Removing installed files from $(PREFIX)..."
+	rm -f $(BINDIR_INSTALL)/client
+	rm -f $(LIBDIR_INSTALL)/libmyutils.so
+	rm -f $(MANDIR_INSTALL)/mycat.1
+	rm -f $(MANDIR_INSTALL)/mygrep.1
+	rm -f $(MANDIR_INSTALL)/wordCount.1
+	rm -f $(MANDIR_INSTALL)/mystrlen.1
+	rm -f $(MANDIR_INSTALL)/mystrcopy.1
+	rm -f $(MANDIR_INSTALL)/myfileopen.1
+	rm -f $(MANDIR_INSTALL)/myfileclose.1
+	rm -f $(MANDIR_INSTALL)/myfilewrite.1
+	rm -f $(MANDIR_INSTALL)/myfileread.1
 
-# ---- Clean up build artifacts ----
+# Clean everything
 clean:
-	@echo "Cleaning up..."
-	rm -f $(OBJDIR)/*.o $(BINDIR)/$(TARGET) $(LIBDIR)/$(LIBNAME)
-
-
+	@echo "==> Cleaning all (recursive: src)"
+	$(MAKE) -C src clean
