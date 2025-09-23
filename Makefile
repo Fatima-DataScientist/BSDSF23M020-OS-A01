@@ -30,7 +30,7 @@ dynamic:
 PREFIX ?= /usr/local
 BINDIR_INSTALL = $(PREFIX)/bin
 LIBDIR_INSTALL = $(PREFIX)/lib
-MANDIR_INSTALL = $(PREFIX)/share/man/man1
+MANDIR_INSTALL = $(PREFIX)/share/man/man3
 
 install: dynamic
 	@echo "Installing program, library, and man pages into $(PREFIX)..."
@@ -39,23 +39,24 @@ install: dynamic
 	mkdir -p $(MANDIR_INSTALL)
 	cp bin/client_dynamic $(BINDIR_INSTALL)/client
 	cp lib/libmyutils.so $(LIBDIR_INSTALL)/
-	cp man/man1/* $(MANDIR_INSTALL)/
-	cp man/man1/* $(MANDIR_INSTALL)/
+	cp man/man3/* $(MANDIR_INSTALL)/
+	mandb
 	echo "Installation complete."
+
 
 uninstall:
 	@echo "Removing installed files from $(PREFIX)..."
 	rm -f $(BINDIR_INSTALL)/client
 	rm -f $(LIBDIR_INSTALL)/libmyutils.so
-	rm -f $(MANDIR_INSTALL)/mycat.1
-	rm -f $(MANDIR_INSTALL)/mygrep.1
-	rm -f $(MANDIR_INSTALL)/wordCount.1
-	rm -f $(MANDIR_INSTALL)/mystrlen.1
-	rm -f $(MANDIR_INSTALL)/mystrcopy.1
-	rm -f $(MANDIR_INSTALL)/myfileopen.1
-	rm -f $(MANDIR_INSTALL)/myfileclose.1
-	rm -f $(MANDIR_INSTALL)/myfilewrite.1
-	rm -f $(MANDIR_INSTALL)/myfileread.1
+	rm -f $(MANDIR_INSTALL)/mycat.3
+	rm -f $(MANDIR_INSTALL)/mygrep.3
+	rm -f $(MANDIR_INSTALL)/wordCount.3
+	rm -f $(MANDIR_INSTALL)/mystrlen.3
+	rm -f $(MANDIR_INSTALL)/mystrcopy.3
+	rm -f $(MANDIR_INSTALL)/myfileopen.3
+	rm -f $(MANDIR_INSTALL)/myfileclose.3
+	rm -f $(MANDIR_INSTALL)/myfilewrite.3
+	rm -f $(MANDIR_INSTALL)/myfileread.3
 
 # Clean everything
 clean:
