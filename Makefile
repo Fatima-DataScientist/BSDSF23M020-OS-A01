@@ -30,7 +30,7 @@ dynamic:
 PREFIX ?= /usr/local
 BINDIR_INSTALL = $(PREFIX)/bin
 LIBDIR_INSTALL = $(PREFIX)/lib
-MANDIR_INSTALL = $(PREFIX)/share/man/man3
+MANDIR_INSTALL = $(PREFIX)/share/man/man1
 
 install: dynamic
 	@echo "Installing program, library, and man pages into $(PREFIX)..."
@@ -39,8 +39,9 @@ install: dynamic
 	mkdir -p $(MANDIR_INSTALL)
 	cp bin/client_dynamic $(BINDIR_INSTALL)/client
 	cp lib/libmyutils.so $(LIBDIR_INSTALL)/
-	cp man/man3/* $(MANDIR_INSTALL)/
-	@echo "Installation complete."
+	cp man/man1/* $(MANDIR_INSTALL)/
+	cp man/man1/* $(MANDIR_INSTALL)/
+	echo "Installation complete."
 
 uninstall:
 	@echo "Removing installed files from $(PREFIX)..."
