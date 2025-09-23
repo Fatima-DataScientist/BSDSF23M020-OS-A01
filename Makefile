@@ -1,61 +1,50 @@
 # ===========================
-# Makefile - Feature 3: Static Library Build
+# Makefile - Feature 4: Dynamic Library Build
 # ===========================
 
-# ---- Macros ----
 CC      := gcc
 CFLAGS  := -Wall -Iinclude
 OBJDIR  := obj
 BINDIR  := bin
 LIBDIR  := lib
 SRCDIR  := src
-TARGET  := client_static
-LIBNAME := libmyutils.a
 
-# ---- Phony Targets ----
-.PHONY: all clean run analyze
+TARGET  := client_dynamic
+LIBNAME := libmyutils.so
 
-# ---- Default Target ----
+.PHONY: all clean run
+
+# Default target
 all: $(BINDIR)/$(TARGET)
 
-# Step 1: Build object files for string and file functions
+# Compile .c -> .o
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	@mkdir -p $(OBJDIR)
 	@echo "Compiling $< -> $@"
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -fPIC -c $< -o $@
 
-# Collect all C files except main.c
+# Collect sources
 UTIL_SRCS := $(filter-out $(SRCDIR)/main.c, $(wildcard $(SRCDIR)/*.c))
 UTIL_OBJS := $(patsubst $(SRCDIR)/%.c, $(OBJDIR)/%.o, $(UTIL_SRCS))
 
-# Step 2: Create the static library from utility object files
+# Build shared library
 $(LIBDIR)/$(LIBNAME): $(UTIL_OBJS)
 	@mkdir -p $(LIBDIR)
-	@echo "Archiving into static library -> $@"
-	ar rcs $@ $(UTIL_OBJS)
+	@echo "Building shared library -> $@"
+	$(CC) -shared -o $@ $^
 
-# Step 3: Link main.c with the static library to create the final executable
+# Link main with shared lib
 $(BINDIR)/$(TARGET): $(LIBDIR)/$(LIBNAME) $(OBJDIR)/main.o
 	@mkdir -p $(BINDIR)
-	@echo "Linking main.o with static library -> $@"
-	$(CC) $(CFLAGS) $(OBJDIR)/main.o -L$(LIBDIR) -lmyutils -o $@
+	@echo "Linking -> $@"
+	$(CC) $(OBJDIR)/main.o -L$(LIBDIR) -lmyutils -o $@
 
-# ---- Run the program ----
+# Run program
 run: all
-	./$(BINDIR)/$(TARGET)
+	LD_LIBRARY_PATH=$(LIBDIR):$$LD_LIBRARY_PATH ./$(BINDIR)/$(TARGET)
 
-# ---- Analyze the static library ----
-analyze:
-	@echo "--- ar -t ---"
-	ar -t $(LIBDIR)/$(LIBNAME)
-	@echo "--- nm ---"
-	nm $(LIBDIR)/$(LIBNAME)
-	@echo "--- readelf -s ---"
-	readelf -s $(LIBDIR)/$(LIBNAME)
-
-# ---- Clean up build artifacts ----
+# Clean
 clean:
-	@echo "Cleaning up..."
+	@echo "Cleaning..."
 	rm -f $(OBJDIR)/*.o $(BINDIR)/$(TARGET) $(LIBDIR)/$(LIBNAME)
-
 
