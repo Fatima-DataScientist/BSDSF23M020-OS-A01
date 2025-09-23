@@ -16,7 +16,7 @@ Learning Objectives
 ---------------------------------
 Project Structure
 ---------------------------------
-ROLLNO-OS-A01/
+BSDSF23M020-OS-A01/
 ├── src/        # Source code (.c files)
 ├── include/    # Header files (.h files)
 ├── lib/        # Static (.a) and Dynamic (.so) libraries
